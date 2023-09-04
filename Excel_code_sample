@@ -78,6 +78,40 @@ Sub AnalyzeFile()
 
 End Sub
 
+#AnlyseFile_New
+Sub AnalyzeFile()
+
+    Dim ws As Worksheet
+    Dim LastCol As Long
+    Dim Header As Range
+
+    Set ws = ThisWorkbook.Sheets("Data Sheet")
+    LastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+    ' Clear previous items and add headers to the listbox
+    UserForm1.lstHeaders.Clear
+    For Each Header In ws.Range(ws.Cells(1, 1), ws.Cells(1, LastCol))
+        UserForm1.lstHeaders.AddItem Header.Value
+    Next Header
+
+    ' Show the UserForm
+    UserForm1.Show
+
+    ' Check selected headers
+    For i = 0 To UserForm1.lstHeaders.ListCount - 1
+        If UserForm1.lstHeaders.Selected(i) Then
+            ' This is where you'll handle the selected headers
+            ' For now, it just shows a message box
+            MsgBox UserForm1.lstHeaders.List(i) & " is selected"
+        End If
+    Next i
+
+    ' Unload the UserForm
+    Unload UserForm1
+
+End Sub
+
+
 Sub CreateDataSets()
 
     Dim ws As Worksheet
