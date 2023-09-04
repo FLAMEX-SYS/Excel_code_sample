@@ -173,3 +173,77 @@ Sub CreateDataSets()
     ActiveChart.SetSourceData Source:=PivotTable.TableRange1
 
 End Sub
+
+# Generate File
+Sub GenerateFiles()
+
+    Dim ws As Worksheet
+    Dim LastCol As Long
+    Dim Header As Range
+    Dim UniqueValues As Collection
+    Dim Value As Variant
+    Dim FilteredRange As Range
+    Dim NewWb As Workbook
+    Dim NewWs As Worksheet
+
+    Set ws = ThisWorkbook.Sheets("Data Sheet")
+    LastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+    ' Clear previous items and add headers to the listbox
+    UserForm1.lstHeaders.Clear
+    For Each Header In ws.Range(ws.Cells(1, 1), ws.Cells(1, LastCol))
+        UserForm1.lstHeaders.AddItem Header.Value
+    Next Header
+
+    ' Show the UserForm
+    UserForm1.Show
+
+    ' Get selected header
+    Dim SelectedHeader As String
+    For i = 0 To UserForm1.lstHeaders.ListCount - 1
+        If UserForm1.lstHeaders.Selected(i) Then
+            SelectedHeader = UserForm1.lstHeaders.List(i)
+            Exit For
+        End If
+    Next i
+
+    ' Check if a header was selected
+    If SelectedHeader = "" Then
+        MsgBox "Please select a header."
+        Exit Sub
+    End If
+
+    ' Get unique values from the selected header column
+    Set UniqueValues = New Collection
+    On Error Resume Next
+    For Each Cell In ws.Range(ws.Cells(2, SelectedHeader), ws.Cells(ws.Rows.Count, SelectedHeader).End(xlUp))
+        UniqueValues.Add Cell.Value, CStr(Cell.Value)
+    Next Cell
+    On Error GoTo 0
+
+    ' Create new workbooks for each unique value
+    Application.ScreenUpdating = False
+    For Each Value In UniqueValues
+        ' Filter data based on the unique value
+        ws.Rows(1).AutoFilter Field:=ws.Columns(SelectedHeader).Column, Criteria1:=Value
+
+        ' Create a new workbook
+        Set NewWb = Workbooks.Add
+        Set NewWs = NewWb.Sheets(1)
+
+        ' Copy filtered data to the new workbook
+        ws.UsedRange.SpecialCells(xlCellTypeVisible).Copy Destination:=NewWs.Cells(1, 1)
+
+        ' Save the new workbook with the appropriate name
+        NewWb.SaveAs ThisWorkbook.Path & "\" & ThisWorkbook.Name & "_" & Value & ".xlsx"
+        NewWb.Close SaveChanges:=False
+    Next Value
+
+    ' Turn off the filter
+    ws.AutoFilterMode = False
+
+    Application.ScreenUpdating = True
+
+    MsgBox "Files generated successfully!"
+
+End Sub
