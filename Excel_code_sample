@@ -21,6 +21,43 @@ Sub UploadFile()
 
 End Sub
 
+#Upload New
+Sub UploadFile()
+
+    Dim LastRow As Long
+    Dim ws As Worksheet
+    Dim NewWs As Worksheet
+    Dim FileToOpen As Variant
+
+    ' Check if "Data Sheet" already exists, if yes, delete it
+    For Each ws In ThisWorkbook.Worksheets
+        If ws.Name = "Data Sheet" Then
+            Application.DisplayAlerts = False
+            ws.Delete
+            Application.DisplayAlerts = True
+            Exit For
+        End If
+    Next ws
+
+    ' Create a new worksheet named "Data Sheet"
+    Set NewWs = ThisWorkbook.Worksheets.Add
+    NewWs.Name = "Data Sheet"
+
+    ' Open file dialog to select file
+    FileToOpen = Application.GetOpenFilename _
+        (Title:="Please choose a file", _
+        FileFilter:="Excel Files *.xls; *.xlsx; *.xlsm; *.xlsb,")
+    If FileToOpen = "False" Then Exit Sub
+
+    ' Import data from selected file
+    Workbooks.Open Filename:=FileToOpen
+    ActiveSheet.UsedRange.Copy NewWs.Cells(1, 1)
+    ActiveWorkbook.Close
+
+End Sub
+
+
+
 Sub AnalyzeFile()
 
     Dim ws As Worksheet
