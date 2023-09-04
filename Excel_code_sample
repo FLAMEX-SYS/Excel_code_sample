@@ -1,0 +1,104 @@
+# 
+Sub UploadFile()
+
+    Dim LastRow As Long
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Data")
+
+    ' Clear previous data
+    ws.Cells.Clear
+
+    ' Open file dialog to select file
+    FileToOpen = Application.GetOpenFilename _
+        (Title:="Please choose a file", _
+        FileFilter:="Excel Files *.xls; *.xlsx; *.xlsm; *.xlsb,")
+    If FileToOpen = "False" Then Exit Sub
+
+    ' Import data from selected file
+    Workbooks.Open Filename:=FileToOpen
+    ActiveSheet.UsedRange.Copy ws.Cells(1, 1)
+    ActiveWorkbook.Close
+
+End Sub
+
+Sub AnalyzeFile()
+
+    Dim ws As Worksheet
+    Dim LastCol As Long
+    Dim Header As Range
+    Dim Msg As String
+
+    Set ws = ThisWorkbook.Sheets("Data")
+    LastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+    Msg = "Select headers for Pivot Table:" & vbCrLf
+
+    For Each Header In ws.Range(ws.Cells(1, 1), ws.Cells(1, LastCol))
+        Msg = Msg & Header.Value & vbCrLf
+    Next Header
+
+    MsgBox Msg
+
+End Sub
+
+Sub CreateDataSets()
+
+    Dim ws As Worksheet
+    Dim PivotWs As Worksheet
+    Dim LastRow As Long, LastCol As Long
+    Dim PivotRange As Range
+    Dim PivotTable As PivotTable
+
+    Set ws = ThisWorkbook.Sheets("Data")
+    Set PivotWs = ThisWorkbook.Sheets("Pivot")
+
+    LastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    LastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+    Set PivotRange = ws.Range(ws.Cells(1, 1), ws.Cells(LastRow, LastCol))
+
+    ' Create Pivot Table
+    Set PivotTable = PivotWs.PivotTableWizard(SourceType:=xlDatabase, SourceData:=PivotRange, TableDestination:=PivotWs.Cells(1, 1), TableName:="PivotTable1")
+
+    ' Add fields to Pivot Table (modify as needed)
+    With PivotTable.PivotFields("YourHeaderName")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+
+    ' Create Chart based on Pivot Table
+    PivotWs.Shapes.AddChart2(251, xlColumnClustered).Select
+    ActiveChart.SetSourceData Source:=PivotTable.TableRange1
+
+End Sub
+
+Sub CreateDataSets()
+
+    Dim ws As Worksheet
+    Dim PivotWs As Worksheet
+    Dim LastRow As Long, LastCol As Long
+    Dim PivotRange As Range
+    Dim PivotTable As PivotTable
+
+    Set ws = ThisWorkbook.Sheets("Data")
+    Set PivotWs = ThisWorkbook.Sheets("Pivot")
+
+    LastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    LastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+    Set PivotRange = ws.Range(ws.Cells(1, 1), ws.Cells(LastRow, LastCol))
+
+    ' Create Pivot Table
+    Set PivotTable = PivotWs.PivotTableWizard(SourceType:=xlDatabase, SourceData:=PivotRange, TableDestination:=PivotWs.Cells(1, 1), TableName:="PivotTable1")
+
+    ' Add fields to Pivot Table (modify as needed)
+    With PivotTable.PivotFields("YourHeaderName")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+
+    ' Create Chart based on Pivot Table
+    PivotWs.Shapes.AddChart2(251, xlColumnClustered).Select
+    ActiveChart.SetSourceData Source:=PivotTable.TableRange1
+
+End Sub
