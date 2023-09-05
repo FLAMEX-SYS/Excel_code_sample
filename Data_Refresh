@@ -1,0 +1,25 @@
+Sub RefreshEverything()
+
+    Dim ws As Worksheet
+    Dim PivotWs As Worksheet
+    Dim i As Integer
+
+    ' Delete all sheets except "Data Sheet" and "Actions" (or whatever your main sheets are named)
+    Application.DisplayAlerts = False
+    For Each ws In ThisWorkbook.Worksheets
+        If ws.Name <> "Data Sheet" And ws.Name <> "Actions" Then
+            ws.Delete
+        End If
+    Next ws
+    Application.DisplayAlerts = True
+
+    ' Clear data from "Data Sheet"
+    ThisWorkbook.Sheets("Data Sheet").Cells.Clear
+
+    ' Reset any other settings or data as needed
+    ' ...
+
+    ' Inform the user
+    MsgBox "Everything has been refreshed!", vbInformation, "Refreshed"
+
+End Sub
