@@ -49,62 +49,36 @@ Private Sub btnGeneratePivot_Click()
     Set PivotTable = PivotWs.PivotTableWizard(SourceType:=xlDatabase, SourceData:=PivotRange, TableDestination:=PivotWs.Cells(1, 1), TableName:="PivotTable1")
 
     ' Add selected fields to Pivot Table
-    For Each Field In Me.lstRows.List
-        If Me.lstRows.Selected(Me.lstRows.ListIndex) Then
-            PivotTable.PivotFields(Field).Orientation = xlRowField
-        End If
-    Next Field
+    Dim i As Integer
 
-    For Each Field In Me.lstColumns.List
-        If Me.lstColumns.Selected(Me.lstColumns.ListIndex) Then
-            PivotTable.PivotFields(Field).Orientation = xlColumnField
+    ' Add selected fields to Rows
+    For i = 0 To Me.lstRows.ListCount - 1
+        If Me.lstRows.Selected(i) Then
+            PivotTable.PivotFields(Me.lstRows.List(i)).Orientation = xlRowField
         End If
-    Next Field
+    Next i
 
-    For Each Field In Me.lstValues.List
-        If Me.lstValues.Selected(Me.lstValues.ListIndex) Then
-            PivotTable.PivotFields(Field).Orientation = xlDataField
+    ' Add selected fields to Columns
+    For i = 0 To Me.lstColumns.ListCount - 1
+        If Me.lstColumns.Selected(i) Then
+            PivotTable.PivotFields(Me.lstColumns.List(i)).Orientation = xlColumnField
         End If
-    Next Field
+    Next i
 
-    For Each Field In Me.lstFilters.List
-        If Me.lstFilters.Selected(Me.lstFilters.ListIndex) Then
-            PivotTable.PivotFields(Field).Orientation = xlPageField
+    ' Add selected field to Values
+    For i = 0 To Me.lstValues.ListCount - 1
+        If Me.lstValues.Selected(i) Then
+            PivotTable.AddDataField PivotTable.PivotFields(Me.lstValues.List(i))
         End If
-    Next Field
+    Next i
+
+    ' Add selected fields to Filters
+    For i = 0 To Me.lstFilters.ListCount - 1
+        If Me.lstFilters.Selected(i) Then
+            PivotTable.PivotFields(Me.lstFilters.List(i)).Orientation = xlPageField
+        End If
+    Next i
 
     Me.Hide
 
 End Sub
-
-
-#
-Dim i As Integer
-
-' Add selected fields to Rows
-For i = 0 To Me.lstRows.ListCount - 1
-    If Me.lstRows.Selected(i) Then
-        PivotTable.PivotFields(Me.lstRows.List(i)).Orientation = xlRowField
-    End If
-Next i
-
-' Add selected fields to Columns
-For i = 0 To Me.lstColumns.ListCount - 1
-    If Me.lstColumns.Selected(i) Then
-        PivotTable.PivotFields(Me.lstColumns.List(i)).Orientation = xlColumnField
-    End If
-Next i
-
-' Add selected field to Values
-For i = 0 To Me.lstValues.ListCount - 1
-    If Me.lstValues.Selected(i) Then
-        PivotTable.AddDataField PivotTable.PivotFields(Me.lstValues.List(i))
-    End If
-Next i
-
-' Add selected fields to Filters
-For i = 0 To Me.lstFilters.ListCount - 1
-    If Me.lstFilters.Selected(i) Then
-        PivotTable.PivotFields(Me.lstFilters.List(i)).Orientation = xlPageField
-    End If
-Next i
