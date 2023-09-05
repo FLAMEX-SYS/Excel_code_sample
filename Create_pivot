@@ -1,0 +1,78 @@
+Sub DisplayPivotForm()
+
+    Dim ws As Worksheet
+    Dim LastCol As Long
+    Dim Header As Range
+
+    Set ws = ThisWorkbook.Sheets("Data Sheet")
+    LastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+    ' Clear previous items and add headers to the listboxes
+    With UserForm1
+        .lstRows.Clear
+        .lstColumns.Clear
+        .lstValues.Clear
+        .lstFilters.Clear
+
+        For Each Header In ws.Range(ws.Cells(1, 1), ws.Cells(1, LastCol))
+            .lstRows.AddItem Header.Value
+            .lstColumns.AddItem Header.Value
+            .lstValues.AddItem Header.Value
+            .lstFilters.AddItem Header.Value
+        Next Header
+
+        ' Show the UserForm
+        .Show
+    End With
+
+End Sub
+
+Private Sub btnGeneratePivot_Click()
+
+    Dim ws As Worksheet
+    Dim PivotWs As Worksheet
+    Dim LastRow As Long, LastCol As Long
+    Dim PivotRange As Range
+    Dim PivotTable As PivotTable
+    Dim Field As Variant
+
+    Set ws = ThisWorkbook.Sheets("Data Sheet")
+    Set PivotWs = ThisWorkbook.Sheets.Add
+    PivotWs.Name = "Pivot"
+
+    LastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    LastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+    Set PivotRange = ws.Range(ws.Cells(1, 1), ws.Cells(LastRow, LastCol))
+
+    ' Create Pivot Table
+    Set PivotTable = PivotWs.PivotTableWizard(SourceType:=xlDatabase, SourceData:=PivotRange, TableDestination:=PivotWs.Cells(1, 1), TableName:="PivotTable1")
+
+    ' Add selected fields to Pivot Table
+    For Each Field In Me.lstRows.List
+        If Me.lstRows.Selected(Me.lstRows.ListIndex) Then
+            PivotTable.PivotFields(Field).Orientation = xlRowField
+        End If
+    Next Field
+
+    For Each Field In Me.lstColumns.List
+        If Me.lstColumns.Selected(Me.lstColumns.ListIndex) Then
+            PivotTable.PivotFields(Field).Orientation = xlColumnField
+        End If
+    Next Field
+
+    For Each Field In Me.lstValues.List
+        If Me.lstValues.Selected(Me.lstValues.ListIndex) Then
+            PivotTable.PivotFields(Field).Orientation = xlDataField
+        End If
+    Next Field
+
+    For Each Field In Me.lstFilters.List
+        If Me.lstFilters.Selected(Me.lstFilters.ListIndex) Then
+            PivotTable.PivotFields(Field).Orientation = xlPageField
+        End If
+    Next Field
+
+    Me.Hide
+
+End Sub
