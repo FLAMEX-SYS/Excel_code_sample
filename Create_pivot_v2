@@ -5,7 +5,7 @@ Private Sub btnGeneratePivot_Click()
     Dim LastRow As Long, LastCol As Long, PivotStartCol As Long
     Dim PivotRange As Range
     Dim PivotTable As PivotTable
-    Dim SummarizedPivot As VbMsgBoxResult
+    Dim NumResults As Integer
     Dim ContinueCreating As VbMsgBoxResult
     Dim i As Integer
 
@@ -51,10 +51,8 @@ Private Sub btnGeneratePivot_Click()
 
         For i = 0 To Me.lstValues.ListCount - 1
             If Me.lstValues.Selected(i) Then
-                With PivotTable.AddDataField(PivotTable.PivotFields(Me.lstValues.List(i)))
-                    .Function = xlSum
+                With PivotTable.AddDataField(PivotTable.PivotFields(Me.lstValues.List(i)), "Count of " & Me.lstValues.List(i), xlCount)
                     .NumberFormat = "#,##0"
-                    .Name = "Sum of " & Me.lstValues.List(i) & " " & i ' Modified naming to avoid conflicts
                 End With
             End If
         Next i
@@ -65,36 +63,23 @@ Private Sub btnGeneratePivot_Click()
             End If
         Next i
 
-        ' Check if the user wants a summarized pivot
-        SummarizedPivot = MsgBox("Do you want to create a summarized pivot showing only the top 10 results?", vbYesNo + vbQuestion, "Summarized Pivot")
+        ' Sort the results in descending order based on the count
+        PivotTable.PivotFields(Me.lstRows.List(0)).AutoSort xlDescending, "Count of " & Me.lstValues.List(0)
 
-        If SummarizedPivot = vbYes Then
-            ' Check the number of unique items in the row field
-            Dim RowItemCount As Long
-            RowItemCount = PivotTable.PivotFields(Me.lstRows.List(0)).PivotItems.Count
+        ' Ask the user how many results they want to see
+        NumResults = InputBox("How many results do you want to see?", "Number of Results")
 
-            If RowItemCount < 10 Then
-                Dim Top5Pivot As VbMsgBoxResult
-                Top5Pivot = MsgBox("The data has less than 10 fields. Do you want to create top 5 results?", vbYesNo + vbQuestion, "Top 5 Results")
+        ' Check the number of unique items in the row field
+        Dim RowItemCount As Long
+        RowItemCount = PivotTable.PivotFields(Me.lstRows.List(0)).PivotItems.Count
 
-                If Top5Pivot = vbYes Then
-                    If RowItemCount < 5 Then
-                        MsgBox "The data has less than 5 fields.", vbExclamation, "Insufficient Data"
-                    Else
-                        ' Limit to top 5
-                        With PivotTable.PivotFields(Me.lstRows.List(0))
-                            .AutoSort xlDescending, "Sum of " & Me.lstValues.List(0) & " " & i
-                            .AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=5, Field:="Sum of " & Me.lstValues.List(0) & " " & i
-                        End With
-                    End If
-                End If
-            Else
-                ' Limit to top 10
-                With PivotTable.PivotFields(Me.lstRows.List(0))
-                    .AutoSort xlDescending, "Sum of " & Me.lstValues.List(0) & " " & i
-                    .AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=10, Field:="Sum of " & Me.lstValues.List(0) & " " & i
-                End With
-            End If
+        If NumResults <= RowItemCount And NumResults > 0 Then
+            ' Limit to the specified number of results
+            With PivotTable.PivotFields(Me.lstRows.List(0))
+                .AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=NumResults, Field:="Count of " & Me.lstValues.List(0)
+            End With
+        Else
+            MsgBox "Wrong value given. Please enter a number between 1 and " & RowItemCount & ".", vbExclamation, "Invalid Input"
         End If
 
         ' Ask the user if they want to continue creating new pivot tables
