@@ -84,7 +84,12 @@ Sub GeneratePivot()
         On Error GoTo 0
 
         ' Filter the pivot table to show only the top 'n' items based on the count
-        PivotTable.PivotFields(RowLabelTitle).AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=NumResults, Field:=PivotTable.DataFields("Count of " & ValueFieldName).Name
+        On Error Resume Next
+        PivotTable.PivotFields(RowLabelTitle).PivotFilters.Add2 _
+            Type:=xlTopCount, _
+            DataField:=PivotTable.DataFields("Count of " & ValueFieldName), _
+            Value1:=NumResults
+        On Error GoTo 0
 
         ' Reset the list boxes for the next selection
         For i = 0 To Me.lstRows.ListCount - 1
