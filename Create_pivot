@@ -192,3 +192,39 @@ Private Sub btnGeneratePivot_Click()
     Me.Hide
 
 End Sub
+
+' ...
+
+' Check if the user wants a summarized pivot
+        SummarizedPivot = MsgBox("Do you want to create a summarized pivot showing only the top 10 results?", vbYesNo + vbQuestion, "Summarized Pivot")
+
+        If SummarizedPivot = vbYes Then
+            ' Check the number of unique items in the row field
+            Dim RowItemCount As Long
+            RowItemCount = PivotTable.PivotFields(Me.lstRows.List(0)).PivotItems.Count
+
+            If RowItemCount < 10 Then
+                Dim Top5Pivot As VbMsgBoxResult
+                Top5Pivot = MsgBox("The data has less than 10 fields. Do you want to create top 5 results?", vbYesNo + vbQuestion, "Top 5 Results")
+
+                If Top5Pivot = vbYes Then
+                    If RowItemCount < 5 Then
+                        MsgBox "The data has less than 5 fields.", vbExclamation, "Insufficient Data"
+                    Else
+                        ' Limit to top 5
+                        With PivotTable.PivotFields(Me.lstRows.List(0))
+                            .AutoSort xlDescending, "Sum of " & Me.lstValues.List(0)
+                            .AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=5, Field:="Sum of " & Me.lstValues.List(0)
+                        End With
+                    End If
+                End If
+            Else
+                ' Limit to top 10
+                With PivotTable.PivotFields(Me.lstRows.List(0))
+                    .AutoSort xlDescending, "Sum of " & Me.lstValues.List(0)
+                    .AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=10, Field:="Sum of " & Me.lstValues.List(0)
+                End With
+            End If
+        End If
+
+' ...
