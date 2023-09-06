@@ -84,20 +84,17 @@ Private Sub btnGeneratePivot_Click()
         Next i
 
         ' Sort the results in descending order based on the count
-        PivotTable.RowFields(1).AutoSort Order:=xlDescending, Field:=PivotTable.DataFields(1)
+        Dim ValueFieldName As String
+        ValueFieldName = "Count of " & Me.lstValues.List(0) ' Assuming the first selected item in lstValues is the primary value field
+        Dim RowLabelTitle As String
+        RowLabelTitle = PivotTable.RowFields(1).Name
+        PivotTable.PivotFields(RowLabelTitle).AutoSort Order:=xlDescending, Field:=PivotTable.DataFields(ValueFieldName)
 
         ' Ask the user for the number of top items they want to see
         Dim NumResults As Integer
         NumResults = InputBox("Enter the number of top items you want to see:", "Top Items", 10)
 
         If NumResults > 0 Then
-            Dim RowLabelTitle As String
-            Dim ValueFieldName As String
-
-            ' Dynamically determine the primary row label from the pivot table
-            RowLabelTitle = PivotTable.RowFields(1).Name
-            ValueFieldName = "Count of " & Me.lstValues.List(0) ' Assuming the first selected item in lstValues is the primary value field
-
             ' Clear any existing filters
             PivotTable.PivotFields(RowLabelTitle).ClearAllFilters
 
