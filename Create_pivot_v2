@@ -78,14 +78,17 @@ Private Sub btnGeneratePivot_Click()
 
         NumResults = InputBox("How many results do you want to see? (Max: " & RowItemCount & ")", "Number of Results")
 
-        If NumResults <= RowItemCount And NumResults > 0 Then
-            ' Limit to the specified number of results
-            With PivotTable.PivotFields(Me.lstRows.List(0))
-                .AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=NumResults, Field:=PivotTable.DataFields(1).Name
-            End With
-        Else
-            MsgBox "Wrong value given. Please enter a number between 1 and " & RowItemCount & ".", vbExclamation, "Invalid Input"
-        End If
+        ' Limit to the specified number of results
+        Dim pItem As PivotItem
+        Dim counter As Integer
+
+        counter = 0
+        For Each pItem In PivotTable.PivotFields(Me.lstRows.List(0)).PivotItems
+            counter = counter + 1
+            If counter > NumResults Then
+                pItem.Visible = False
+            End If
+        Next pItem
 
         ' Ask the user if they want to continue creating new pivot tables
         ContinueCreating = MsgBox("Do you want to create another pivot table?", vbYesNo + vbQuestion, "Continue?")
