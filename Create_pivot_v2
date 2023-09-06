@@ -32,6 +32,21 @@ Private Sub btnGeneratePivot_Click()
 
         Set PivotRange = ws.Range(ws.Cells(1, 1), ws.Cells(LastRow, LastCol))
 
+        ' Check if at least one item is selected in lstValues
+        Dim ValueSelected As Boolean
+        ValueSelected = False
+        For i = 0 To Me.lstValues.ListCount - 1
+            If Me.lstValues.Selected(i) Then
+                ValueSelected = True
+                Exit For
+            End If
+        Next i
+
+        If Not ValueSelected Then
+            MsgBox "Please select at least one item in Values before generating the pivot table.", vbExclamation, "No Value Selected"
+            Exit Sub
+        End If
+
         ' Create a unique PivotTable name based on the current date and time
         Dim PivotTableName As String
         PivotTableName = "PivotTable" & Replace(Replace(Now, ":", ""), " ", "")
@@ -71,22 +86,21 @@ Private Sub btnGeneratePivot_Click()
         ' Sort the results in descending order based on the count
         PivotTable.RowFields(1).AutoSort Order:=xlDescending, Field:=PivotTable.DataFields(1)
 
-        ' Ask the user if they want a summarized version
-        Dim Summarized As VbMsgBoxResult
-        Summarized = MsgBox("Do you want to see a summarized version with only the top 10 items?", vbYesNo + vbQuestion, "Summarized Version")
+        ' Ask the user for the number of top items they want to see
+        Dim NumResults As Integer
+        NumResults = InputBox("Enter the number of top items you want to see:", "Top Items", 10)
 
-        If Summarized = vbYes Then
-            ' Limit to the top 10 results
-            Dim pItem As PivotItem
-            Dim counter As Integer
+        If NumResults > 0 Then
+            Dim RowLabelTitle As String
+            Dim ValueFieldName As String
 
-            counter = 0
-            For Each pItem In PivotTable.PivotFields(Me.lstRows.List(0)).PivotItems
-                counter = counter + 1
-                If counter > 10 Then
-                    pItem.Visible = False
-                End If
-            Next pItem
+            RowLabelTitle = Me.lstRows.List(0) ' Assuming the first selected item in lstRows is the primary row label
+            ValueFieldName = "Count of " & Me.lstValues.List(0) ' Assuming the first selected item in lstValues is the primary value field
+
+            ActiveSheet.PivotTables(PivotTableName).PivotFields(RowLabelTitle).PivotFilters.Add2 _
+                Type:=xlTopCount, _
+                DataField:=ActiveSheet.PivotTables(PivotTableName).PivotFields(ValueFieldName), _
+                Value1:=NumResults
         End If
 
         ' Reset the list boxes for the next selection
