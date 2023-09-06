@@ -1,95 +1,116 @@
-Sub GeneratePivot()
+Private Sub btnGeneratePivot_Click()
 
-    Dim wsData As Worksheet
-    Dim wsPivot As Worksheet
+    Dim ws As Worksheet
+    Dim PivotWs As Worksheet
+    Dim LastRow As Long, LastCol As Long, PivotStartCol As Long
     Dim PivotRange As Range
     Dim PivotTable As PivotTable
-    Dim PivotTableName As String
-    Dim LastCol As Long
-    Dim LastRow As Long
-    Dim NextCol As Long
     Dim ContinueCreating As VbMsgBoxResult
-    Dim RowLabelTitle As String
-    Dim ValueFieldName As String
-    Dim NumResults As Integer
+    Dim i As Integer
 
-    ' Optimization
-    Application.ScreenUpdating = False
-    Application.Calculation = xlCalculationManual
-
-    ' Reference to data sheet
-    Set wsData = ThisWorkbook.Sheets("Data Sheet")
-
-    ' Check if Pivot sheet exists, if not, create it
+    Set ws = ThisWorkbook.Sheets("Data Sheet")
+    
+    ' Check if the "Pivot" sheet exists, if not, create it
     On Error Resume Next
-    Set wsPivot = ThisWorkbook.Sheets("Pivot")
+    Set PivotWs = ThisWorkbook.Sheets("Pivot")
     On Error GoTo 0
-    If wsPivot Is Nothing Then
-        Set wsPivot = ThisWorkbook.Sheets.Add
-        wsPivot.Name = "Pivot"
+    If PivotWs Is Nothing Then
+        Set PivotWs = ThisWorkbook.Sheets.Add
+        PivotWs.Name = "Pivot"
     End If
 
     Do
-        ' Determine the location for the next pivot table
-        If wsPivot.PivotTables.Count = 0 Then
-            NextCol = 1
+        ' Determine the starting column for the new pivot table
+        If IsEmpty(PivotWs.Cells(1, 1).Value) Then
+            PivotStartCol = 1
         Else
-            NextCol = wsPivot.Cells(1, Columns.Count).End(xlToLeft).Column + 3
+            PivotStartCol = PivotWs.Cells(1, PivotWs.Columns.Count).End(xlToLeft).Column + 3 ' +3 to leave 2 columns gap
         End If
 
-        ' Define the data range for the pivot table
-        LastCol = wsData.Cells(1, Columns.Count).End(xlToLeft).Column
-        LastRow = wsData.Cells(Rows.Count, 1).End(xlUp).Row
-        Set PivotRange = wsData.Range("A1:" & Cells(1, LastCol).Address).Resize(LastRow)
+        LastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        LastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
 
-        ' Check if at least one value field is selected
-        If Me.lstValues.ListIndex = -1 Then
-            MsgBox "Please select at least one field for the VALUES area.", vbExclamation, "Selection Missing"
+        Set PivotRange = ws.Range(ws.Cells(1, 1), ws.Cells(LastRow, LastCol))
+
+        ' Check if at least one item is selected in lstValues
+        Dim ValueSelected As Boolean
+        ValueSelected = False
+        For i = 0 To Me.lstValues.ListCount - 1
+            If Me.lstValues.Selected(i) Then
+                ValueSelected = True
+                Exit For
+            End If
+        Next i
+
+        If Not ValueSelected Then
+            MsgBox "Please select at least one item in Values before generating the pivot table.", vbExclamation, "No Value Selected"
             Exit Sub
         End If
 
-        ' Create a new pivot table
-        PivotTableName = "PivotTable" & Format(Now, "ddmmyyhhmmss")
-        Set PivotTable = wsPivot.PivotTables.Add(PivotCache:=ThisWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:=PivotRange), TableDestination:=wsPivot.Cells(1, NextCol), TableName:=PivotTableName)
+        ' Create a unique PivotTable name based on the current date and time
+        Dim PivotTableName As String
+        PivotTableName = "PivotTable" & Replace(Replace(Now, ":", ""), " ", "")
 
-        ' Add fields to the pivot table
-        Dim i As Integer
+        ' Create Pivot Table with a unique cache
+        Dim PivotCache As PivotCache
+        Set PivotCache = ThisWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:=PivotRange.Address(True, True, xlR1C1, True))
+        Set PivotTable = PivotWs.PivotTables.Add(PivotCache:=PivotCache, TableDestination:=PivotWs.Cells(1, PivotStartCol), TableName:=PivotTableName)
+
+        ' Add selected fields to Pivot Table
         For i = 0 To Me.lstRows.ListCount - 1
-            If Me.lstRows.Selected(i) Then PivotTable.AddDataField PivotTable.PivotFields(Me.lstRows.List(i)), "Count of " & Me.lstRows.List(i), xlCount
+            If Me.lstRows.Selected(i) Then
+                PivotTable.PivotFields(Me.lstRows.List(i)).Orientation = xlRowField
+            End If
         Next i
+
         For i = 0 To Me.lstColumns.ListCount - 1
-            If Me.lstColumns.Selected(i) Then PivotTable.PivotFields(Me.lstColumns.List(i)).Orientation = xlColumnField
+            If Me.lstColumns.Selected(i) Then
+                PivotTable.PivotFields(Me.lstColumns.List(i)).Orientation = xlColumnField
+            End If
         Next i
+
         For i = 0 To Me.lstValues.ListCount - 1
-            If Me.lstValues.Selected(i) Then PivotTable.PivotFields(Me.lstValues.List(i)).Orientation = xlDataField
+            If Me.lstValues.Selected(i) Then
+                With PivotTable.AddDataField(PivotTable.PivotFields(Me.lstValues.List(i)), "Count of " & Me.lstValues.List(i), xlCount)
+                    .NumberFormat = "#,##0"
+                End With
+            End If
         Next i
+
         For i = 0 To Me.lstFilters.ListCount - 1
-            If Me.lstFilters.Selected(i) Then PivotTable.PivotFields(Me.lstFilters.List(i)).Orientation = xlPageField
+            If Me.lstFilters.Selected(i) Then
+                PivotTable.PivotFields(Me.lstFilters.List(i)).Orientation = xlPageField
+            End If
         Next i
 
-        ' Determine primary value field and row label
-        ValueFieldName = Me.lstValues.List(Me.lstValues.ListIndex)
+        ' Sort the results in descending order based on the count
+        Dim ValueFieldName As String
+        Dim RowLabelTitle As String
+        ' Dynamically determine the primary value field from the pivot table
+        ValueFieldName = PivotTable.DataFields(1).Name
         RowLabelTitle = PivotTable.RowFields(1).Name
-
-        ' Sort the pivot table based on the count of the selected value field in descending order
-        PivotTable.PivotFields(RowLabelTitle).AutoSort Order:=xlDescending, Field:="Count of " & ValueFieldName
+        PivotTable.PivotFields(RowLabelTitle).AutoSort Order:=xlDescending, Field:=PivotTable.DataFields(ValueFieldName)
 
         ' Ask the user for the number of top items they want to see
-        On Error Resume Next
+        Dim NumResults As Integer
         NumResults = InputBox("Enter the number of top items you want to see:", "Top Items", 10)
-        If NumResults <= 0 Then
-            MsgBox "Please enter a positive number for top items.", vbExclamation, "Invalid Number"
-            Exit Sub
-        End If
-        On Error GoTo 0
 
-        ' Filter the pivot table to show only the top 'n' items based on the count
-        On Error Resume Next
-        PivotTable.PivotFields(RowLabelTitle).PivotFilters.Add2 _
-            Type:=xlTopCount, _
-            DataField:=PivotTable.DataFields("Count of " & ValueFieldName), _
-            Value1:=NumResults
-        On Error GoTo 0
+        If NumResults > 0 Then
+            ' Clear any existing filters
+            PivotTable.PivotFields(RowLabelTitle).ClearAllFilters
+
+            ' Filter the top items manually
+            Dim pItem As PivotItem
+            Dim counter As Integer
+
+            counter = 0
+            For Each pItem In PivotTable.PivotFields(RowLabelTitle).PivotItems
+                counter = counter + 1
+                If counter > NumResults Then
+                    pItem.Visible = False
+                End If
+            Next pItem
+        End If
 
         ' Reset the list boxes for the next selection
         For i = 0 To Me.lstRows.ListCount - 1
@@ -107,6 +128,7 @@ Sub GeneratePivot()
 
         ' Ask the user if they want to continue creating new pivot tables
         ContinueCreating = MsgBox("Do you want to create another pivot table?", vbYesNo + vbQuestion, "Continue?")
+
 
     Loop Until ContinueCreating = vbNo
 
