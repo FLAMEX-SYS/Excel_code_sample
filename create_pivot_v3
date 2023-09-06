@@ -137,3 +137,14 @@ Private Sub btnGeneratePivot_Click()
     Application.Calculation = xlCalculationAutomatic
 
 End Sub
+
+If NumResults > 0 Then
+    ' Clear any existing filters
+    PivotTable.PivotFields(RowLabelTitle).ClearAllFilters
+
+    ' Filter to show only the top n items
+    PivotTable.PivotFields(RowLabelTitle).PivotFilters.Add2 _
+        Type:=xlTopCount, _
+        DataField:=PivotTable.DataFields(ValueFieldName), _
+        Value1:=NumResults
+End If
