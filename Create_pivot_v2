@@ -1,5 +1,9 @@
 Private Sub btnGeneratePivot_Click()
 
+    ' Optimization: Turn off screen updating and set calculation to manual
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+
     Dim ws As Worksheet
     Dim PivotWs As Worksheet
     Dim LastRow As Long, LastCol As Long, PivotStartCol As Long
@@ -88,28 +92,12 @@ Private Sub btnGeneratePivot_Click()
         ValueFieldName = "Count of " & Me.lstValues.List(0) ' Assuming the first selected item in lstValues is the primary value field
         Dim RowLabelTitle As String
         RowLabelTitle = PivotTable.RowFields(1).Name
-        PivotTable.PivotFields(RowLabelTitle).AutoSort Order:=xlDescending, Field:=PivotTable.DataFields(ValueFieldName)
 
-        ' Ask the user for the number of top items they want to see
-        Dim NumResults As Integer
-        NumResults = InputBox("Enter the number of top items you want to see:", "Top Items", 10)
+        ' Clear any existing filters
+        PivotTable.PivotFields(RowLabelTitle).ClearAllFilters
 
-        If NumResults > 0 Then
-            ' Clear any existing filters
-            PivotTable.PivotFields(RowLabelTitle).ClearAllFilters
-
-            ' Filter the top items manually
-            Dim pItem As PivotItem
-            Dim counter As Integer
-
-            counter = 0
-            For Each pItem In PivotTable.PivotFields(RowLabelTitle).PivotItems
-                counter = counter + 1
-                If counter > NumResults Then
-                    pItem.Visible = False
-                End If
-            Next pItem
-        End If
+        ' Filter the top items based on the count of the value fields
+        PivotTable.PivotFields(RowLabelTitle).AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=NumResults, Field:=PivotTable.DataFields(ValueFieldName)
 
         ' Reset the list boxes for the next selection
         For i = 0 To Me.lstRows.ListCount - 1
@@ -130,6 +118,8 @@ Private Sub btnGeneratePivot_Click()
 
     Loop Until ContinueCreating = vbNo
 
-    Me.Hide
+    ' Reset optimizations
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
 
 End Sub
