@@ -89,3 +89,10 @@ Private Sub btnGeneratePivot_Click()
     Me.Hide
 
 End Sub
+
+' Determine the starting column for the new pivot table
+If IsEmpty(PivotWs.Cells(1, 1).Value) Then
+    PivotStartCol = 1
+Else
+    PivotStartCol = PivotWs.Cells(1, PivotWs.Columns.Count).End(xlToLeft).Column + 3 ' +3 to leave 2 columns gap
+End If
