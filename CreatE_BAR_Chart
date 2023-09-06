@@ -1,0 +1,35 @@
+Private Sub btnCreateCharts_Click()
+
+    Dim PivotWs As Worksheet
+    Dim PivotTable As PivotTable
+    Dim Chart As ChartObject
+    Dim ChartTopPosition As Double
+    Dim ChartLeftPosition As Double
+
+    ' Set the worksheet containing the pivot tables
+    Set PivotWs = ThisWorkbook.Sheets("Pivot")
+
+    ' Initialize chart position
+    ChartTopPosition = 10
+    ChartLeftPosition = PivotWs.Cells(1, PivotWs.Columns.Count).End(xlToLeft).Column + 5
+
+    ' Loop through each pivot table in the worksheet
+    For Each PivotTable In PivotWs.PivotTables
+
+        ' Create a new chart for the pivot table
+        Set Chart = PivotWs.ChartObjects.Add(Left:=PivotWs.Cells(1, ChartLeftPosition).Left, Width:=375, Top:=ChartTopPosition, Height:=225)
+        
+        ' Set the source data and chart type
+        With Chart.Chart
+            .SetSourceData Source:=PivotTable.TableRange1
+            .ChartType = xlBarClustered
+            .HasTitle = True
+            .ChartTitle.Text = PivotTable.Name
+        End With
+
+        ' Adjust the top position for the next chart
+        ChartTopPosition = ChartTopPosition + Chart.Height + 20
+
+    Next PivotTable
+
+End Sub
