@@ -5,7 +5,6 @@ Private Sub btnGeneratePivot_Click()
     Dim LastRow As Long, LastCol As Long, PivotStartCol As Long
     Dim PivotRange As Range
     Dim PivotTable As PivotTable
-    Dim NumResults As Integer
     Dim ContinueCreating As VbMsgBoxResult
     Dim i As Integer
 
@@ -72,23 +71,37 @@ Private Sub btnGeneratePivot_Click()
         ' Sort the results in descending order based on the count
         PivotTable.RowFields(1).AutoSort Order:=xlDescending, Field:=PivotTable.DataFields(1)
 
-        ' Ask the user how many results they want to see
-        Dim RowItemCount As Long
-        RowItemCount = PivotWs.Cells(PivotWs.Rows.Count, PivotStartCol).End(xlUp).Row - 1 ' Subtracting 1 for the header
+        ' Ask the user if they want a summarized version
+        Dim Summarized As VbMsgBoxResult
+        Summarized = MsgBox("Do you want to see a summarized version with only the top 10 items?", vbYesNo + vbQuestion, "Summarized Version")
 
-        NumResults = InputBox("How many results do you want to see? (Max: " & RowItemCount & ")", "Number of Results")
+        If Summarized = vbYes Then
+            ' Limit to the top 10 results
+            Dim pItem As PivotItem
+            Dim counter As Integer
 
-        ' Limit to the specified number of results
-        Dim pItem As PivotItem
-        Dim counter As Integer
+            counter = 0
+            For Each pItem In PivotTable.PivotFields(Me.lstRows.List(0)).PivotItems
+                counter = counter + 1
+                If counter > 10 Then
+                    pItem.Visible = False
+                End If
+            Next pItem
+        End If
 
-        counter = 0
-        For Each pItem In PivotTable.PivotFields(Me.lstRows.List(0)).PivotItems
-            counter = counter + 1
-            If counter > NumResults Then
-                pItem.Visible = False
-            End If
-        Next pItem
+        ' Reset the list boxes for the next selection
+        For i = 0 To Me.lstRows.ListCount - 1
+            Me.lstRows.Selected(i) = False
+        Next i
+        For i = 0 To Me.lstColumns.ListCount - 1
+            Me.lstColumns.Selected(i) = False
+        Next i
+        For i = 0 To Me.lstValues.ListCount - 1
+            Me.lstValues.Selected(i) = False
+        Next i
+        For i = 0 To Me.lstFilters.ListCount - 1
+            Me.lstFilters.Selected(i) = False
+        Next i
 
         ' Ask the user if they want to continue creating new pivot tables
         ContinueCreating = MsgBox("Do you want to create another pivot table?", vbYesNo + vbQuestion, "Continue?")
