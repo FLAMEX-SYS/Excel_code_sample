@@ -110,7 +110,7 @@ Private Sub btnGeneratePivot_Click()
         PivotTable.PivotFields(RowLabelTitle).ClearAllFilters
 
         ' Filter the top items based on the count of the value fields
-        PivotTable.PivotFields(RowLabelTitle).AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=NumResults, Field:=PivotTable.DataFields(ValueFieldName)
+        PivotTable.PivotFields(RowLabelTitle).AutoShow Type:=xlTopCount, Count:=NumResults, Field:=PivotTable.DataFields(ValueFieldName).Name
 
         ' Reset the list boxes for the next selection
         For i = 0 To Me.lstRows.ListCount - 1
