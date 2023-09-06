@@ -94,13 +94,24 @@ Private Sub btnGeneratePivot_Click()
             Dim RowLabelTitle As String
             Dim ValueFieldName As String
 
-            RowLabelTitle = Me.lstRows.List(0) ' Assuming the first selected item in lstRows is the primary row label
+            ' Dynamically determine the primary row label from the pivot table
+            RowLabelTitle = PivotTable.RowFields(1).Name
             ValueFieldName = "Count of " & Me.lstValues.List(0) ' Assuming the first selected item in lstValues is the primary value field
 
-            ActiveSheet.PivotTables(PivotTableName).PivotFields(RowLabelTitle).PivotFilters.Add2 _
-                Type:=xlTopCount, _
-                DataField:=ActiveSheet.PivotTables(PivotTableName).PivotFields(ValueFieldName), _
-                Value1:=NumResults
+            ' Clear any existing filters
+            PivotTable.PivotFields(RowLabelTitle).ClearAllFilters
+
+            ' Filter the top items manually
+            Dim pItem As PivotItem
+            Dim counter As Integer
+
+            counter = 0
+            For Each pItem In PivotTable.PivotFields(RowLabelTitle).PivotItems
+                counter = counter + 1
+                If counter > NumResults Then
+                    pItem.Visible = False
+                End If
+            Next pItem
         End If
 
         ' Reset the list boxes for the next selection
