@@ -64,19 +64,18 @@ Private Sub btnGeneratePivot_Click()
         Next i
 
         ' Sort the results in descending order based on the count
-        PivotTable.PivotFields(Me.lstRows.List(0)).AutoSort xlDescending, "Count of " & Me.lstValues.List(0)
+        PivotTable.RowFields(1).AutoSort Order:=xlDescending, Field:=PivotTable.DataFields(1)
 
         ' Ask the user how many results they want to see
-        NumResults = InputBox("How many results do you want to see?", "Number of Results")
-
-        ' Check the number of unique items in the row field
         Dim RowItemCount As Long
-        RowItemCount = PivotTable.PivotFields(Me.lstRows.List(0)).PivotItems.Count
+        RowItemCount = PivotWs.Cells(PivotWs.Rows.Count, PivotStartCol).End(xlUp).Row - 1 ' Subtracting 1 for the header
+
+        NumResults = InputBox("How many results do you want to see? (Max: " & RowItemCount & ")", "Number of Results")
 
         If NumResults <= RowItemCount And NumResults > 0 Then
             ' Limit to the specified number of results
             With PivotTable.PivotFields(Me.lstRows.List(0))
-                .AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=NumResults, Field:="Count of " & Me.lstValues.List(0)
+                .AutoShow Type:=xlAutomatic, Range:=xlTop, Count:=NumResults, Field:=PivotTable.DataFields(1).Name
             End With
         Else
             MsgBox "Wrong value given. Please enter a number between 1 and " & RowItemCount & ".", vbExclamation, "Invalid Input"
