@@ -1,32 +1,73 @@
 Private Sub btnCreateCharts_Click()
 
     Dim PivotWs As Worksheet
+    Dim ChartWs As Worksheet
     Dim PivotTable As PivotTable
     Dim Chart As ChartObject
     Dim ChartTopPosition As Double
     Dim ChartLeftPosition As Double
     Dim ChartWidth As Double
     Dim ChartHeight As Double
+    Dim SummarizedResponse As VbMsgBoxResult
+    Dim ProceedResponse As VbMsgBoxResult
+
+    ' Ask the user if the pivot is summarized
+    SummarizedResponse = MsgBox("Is your pivot summarized?", vbYesNo + vbQuestion, "Pivot Summarized?")
+
+    ' If the pivot is not summarized, show a warning
+    If SummarizedResponse = vbNo Then
+        ProceedResponse = MsgBox("The content can be high. Are you sure you want to proceed?", vbYesNo + vbExclamation, "Warning")
+        If ProceedResponse = vbNo Then
+            Exit Sub
+        End If
+    End If
 
     ' Set the worksheet containing the pivot tables
     Set PivotWs = ThisWorkbook.Sheets("Pivot")
 
+    ' Check if the "Summarized Chart" sheet exists, if not, create it
+    On Error Resume Next
+    Set ChartWs = ThisWorkbook.Sheets("Summarized Chart")
+    On Error GoTo 0
+    If ChartWs Is Nothing Then
+        Set ChartWs = ThisWorkbook.Sheets.Add
+        ChartWs.Name = "Summarized Chart"
+    Else
+        ' Clear existing charts if the sheet already exists
+        ChartWs.Cells.Clear
+    End If
+
     ' Initialize chart position and dimensions
     ChartTopPosition = 10
-    ChartLeftPosition = PivotWs.Cells(1, PivotWs.Columns.Count).End(xlToLeft).Column + 3
-    ChartWidth = 400
-    ChartHeight = 250
+    ChartLeftPosition = 10
+    ChartWidth = 7 * 72 ' 7 inches (1 inch = 72 points)
+    ChartHeight = 5 * 72 ' 5 inches
 
     ' Loop through each pivot table in the worksheet
     For Each PivotTable In PivotWs.PivotTables
-        ' Create a new chart for the pivot table
-        Set Chart = PivotWs.ChartObjects.Add(Left:=PivotWs.Cells(1, ChartLeftPosition).Left, Width:=ChartWidth, Top:=ChartTopPosition, Height:=ChartHeight)
+        ' Create a new chart for the pivot table in the "Summarized Chart" sheet
+        Set Chart = ChartWs.ChartObjects.Add(Left:=ChartLeftPosition, Width:=ChartWidth, Top:=ChartTopPosition, Height:=ChartHeight)
         
         ' Set the chart's data source to the pivot table's data range
         Chart.Chart.SetSourceData Source:=PivotTable.TableRange1
         
         ' Set the chart type to 2D Bar
         Chart.Chart.ChartType = xlBarClustered
+        
+        ' Set the chart style to "Style 6"
+        Chart.Chart.Style = 6
+        
+        ' Reverse the order of categories on the axis
+        Chart.Chart.Axes(xlCategory, xlPrimary).ReversePlotOrder = True
+        
+        ' Remove "Total" label from the chart
+        Dim s As Series
+        For Each s In Chart.Chart.SeriesCollection
+            If s.Name = "Total" Then
+                s.Delete
+                Exit For
+            End If
+        Next s
         
         ' Adjust the top position for the next chart
         ChartTopPosition = ChartTopPosition + ChartHeight + 20
