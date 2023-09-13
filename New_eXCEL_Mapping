@@ -1,0 +1,39 @@
+Set objExcel = CreateObject("Excel.Application")
+objExcel.Visible = True
+
+' Open the Excel file
+Set objWorkbook = objExcel.Workbooks.Open("C:\path\to\your\file.xlsx")
+
+' Select the sheet with the data
+Set dataSheet = objWorkbook.Sheets(1)
+' Select the sheet with the mapping
+Set mappingSheet = objWorkbook.Sheets(2)
+
+' Add new columns for Location and Region in the data sheet
+dataSheet.Cells(1, 2).Value = "Location"
+dataSheet.Cells(1, 3).Value = "Region"
+
+' Loop through each row in the Host column of the data sheet
+For i = 2 To dataSheet.UsedRange.Rows.Count
+    hostName = dataSheet.Cells(i, 1).Value
+    isFound = False
+    
+    ' Search for the hostname in the mapping sheet
+    For j = 2 To mappingSheet.UsedRange.Rows.Count
+        If mappingSheet.Cells(j, 1).Value = hostName Then
+            dataSheet.Cells(i, 2).Value = mappingSheet.Cells(j, 2).Value ' Location
+            dataSheet.Cells(i, 3).Value = mappingSheet.Cells(j, 3).Value ' Region
+            isFound = True
+            Exit For
+        End If
+    Next
+    
+    ' If not found, you can add logic for closest match here
+    If Not isFound Then
+        ' Example: dataSheet.Cells(i, 2).Value = "Closest Location"
+    End If
+Next
+
+' Save and close the Excel file
+objWorkbook.Save
+objWorkbook.Close
