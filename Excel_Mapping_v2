@@ -1,0 +1,32 @@
+Sub Button1_Click()
+    Dim dataSheet As Worksheet
+    Dim mappingSheet As Worksheet
+    Dim i As Long, j As Long
+    Dim hostName As String
+    Dim isFound As Boolean
+
+    ' Set the sheets
+    Set dataSheet = ThisWorkbook.Sheets("Sheet1")
+    Set mappingSheet = ThisWorkbook.Sheets("Sheet2")
+
+    ' Loop through each row in the Host column of the data sheet
+    For i = 2 To dataSheet.Cells(dataSheet.Rows.Count, 1).End(xlUp).Row
+        hostName = dataSheet.Cells(i, 1).Value
+        isFound = False
+
+        ' Search for the hostname in the mapping sheet
+        For j = 2 To mappingSheet.Cells(mappingSheet.Rows.Count, 1).End(xlUp).Row
+            If mappingSheet.Cells(j, 1).Value = hostName Then
+                dataSheet.Cells(i, 2).Value = mappingSheet.Cells(j, 2).Value ' Location
+                dataSheet.Cells(i, 3).Value = mappingSheet.Cells(j, 3).Value ' Region
+                isFound = True
+                Exit For
+            End If
+        Next j
+
+        ' If not found, you can add logic for closest match here
+        If Not isFound Then
+            ' Example: dataSheet.Cells(i, 2).Value = "Closest Location"
+        End If
+    Next i
+End Sub
