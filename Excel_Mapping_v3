@@ -1,0 +1,61 @@
+Sub Pinpoint()
+    Dim dataWb As Workbook
+    Dim toolWb As Workbook
+    Dim dataWs As Worksheet
+    Dim siteMappingWs As Worksheet
+    Dim hostnameMappingWs As Worksheet
+    Dim i As Long, j As Long
+    Dim lastRow As Long
+    Dim site As String, hostname As String
+    Dim location As String, region As String
+
+    ' Set the tool workbook and sheets
+    Set toolWb = ThisWorkbook
+    Set siteMappingWs = toolWb.Sheets("Sheet2")
+    Set hostnameMappingWs = toolWb.Sheets("Sheet3")
+
+    ' Open the downloaded file
+    Set dataWb = Workbooks.Open("C:\path\to\downloaded\file.xlsx")
+    Set dataWs = dataWb.Sheets(1) ' Assuming data is in the first sheet
+
+    ' Insert new columns for Location and Region
+    dataWs.Columns("C:D").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+    dataWs.Cells(1, 3).Value = "Location"
+    dataWs.Cells(1, 4).Value = "Region"
+
+    lastRow = dataWs.Cells(dataWs.Rows.Count, 1).End(xlUp).Row
+
+    ' Loop through each row in the downloaded file
+    For i = 2 To lastRow
+        site = dataWs.Cells(i, 1).Value
+        hostname = dataWs.Cells(i, 2).Value
+
+        ' VLOOKUP for Site
+        For j = 2 To siteMappingWs.Cells(siteMappingWs.Rows.Count, 1).End(xlUp).Row
+            If siteMappingWs.Cells(j, 1).Value = site Then
+                location = siteMappingWs.Cells(j, 2).Value
+                region = siteMappingWs.Cells(j, 3).Value
+                Exit For
+            End If
+        Next j
+
+        ' If Location is "Rapid7 Insight Agent", VLOOKUP for Hostname
+        If location = "Rapid7 Insight Agent" Then
+            For j = 2 To hostnameMappingWs.Cells(hostnameMappingWs.Rows.Count, 1).End(xlUp).Row
+                If hostnameMappingWs.Cells(j, 1).Value = hostname Then
+                    location = hostnameMappingWs.Cells(j, 2).Value
+                    region = hostnameMappingWs.Cells(j, 3).Value
+                    Exit For
+                End If
+            Next j
+        End If
+
+        ' Update Location and Region columns
+        dataWs.Cells(i, 3).Value = location
+        dataWs.Cells(i, 4).Value = region
+    Next i
+
+    ' Save and close the downloaded file
+    dataWb.Save
+    dataWb.Close
+End Sub
