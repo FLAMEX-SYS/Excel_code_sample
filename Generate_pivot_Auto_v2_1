@@ -1,0 +1,44 @@
+Private Sub btnCreatePivotChart_Click()
+    Dim ChartWs As Worksheet
+    Dim PivotWs As Worksheet
+    Dim Chart1 As ChartObject, Chart2 As ChartObject
+    Dim PivotTable1 As PivotTable, PivotTable2 As PivotTable
+    
+    ' Reference to the pivot table worksheet
+    Set PivotWs = ThisWorkbook.Sheets("HL_Pivot")
+    
+    ' Reference to the pivot tables
+    Set PivotTable1 = PivotWs.PivotTables("PivotTableVulTitle")
+    Set PivotTable2 = PivotWs.PivotTables("PivotTableCategory")
+    
+    ' Check if the "HL_Bar_Chart" sheet exists, if not, create it
+    On Error Resume Next
+    Set ChartWs = ThisWorkbook.Sheets("HL_Bar_Chart")
+    On Error GoTo 0
+    If ChartWs Is Nothing Then
+        Set ChartWs = ThisWorkbook.Sheets.Add
+        ChartWs.Name = "HL_Bar_Chart"
+    Else
+        ChartWs.Cells.Clear ' Clear existing content if the sheet already exists
+    End If
+    
+    ' Create the first bar chart: Vul title vs Hostname
+    Set Chart1 = ChartWs.ChartObjects.Add(Left:=100, Width:=375, Top:=50, Height:=225)
+    Chart1.Chart.SetSourceData Source:=PivotTable1.TableRange1
+    Chart1.Chart.ChartType = xlBarClustered
+    Chart1.Chart.HasTitle = True
+    Chart1.Chart.ChartTitle.Text = "Vul Title vs Hostname"
+    Chart1.Chart.Axes(xlCategory, xlPrimary).ReversePlotOrder = True
+    Chart1.Chart.Legend.Delete
+    
+    ' Create the second bar chart: Category vs IP Address
+    Set Chart2 = ChartWs.ChartObjects.Add(Left:=100, Width:=375, Top:=300, Height:=225)
+    Chart2.Chart.SetSourceData Source:=PivotTable2.TableRange1
+    Chart2.Chart.ChartType = xlBarClustered
+    Chart2.Chart.HasTitle = True
+    Chart2.Chart.ChartTitle.Text = "Category vs IP Address"
+    Chart2.Chart.Axes(xlCategory, xlPrimary).ReversePlotOrder = True
+    Chart2.Chart.Legend.Delete
+    
+    MsgBox "Pivot charts have been created successfully!", vbInformation
+End Sub
