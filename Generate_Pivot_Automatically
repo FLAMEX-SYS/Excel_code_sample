@@ -1,0 +1,62 @@
+Private Sub btnGenerateHLPivot_Click()
+
+    Dim ws As Worksheet
+    Dim PivotWs As Worksheet
+    Dim LastRow As Long, LastCol As Long
+    Dim PivotRange As Range
+    Dim PivotTable1 As PivotTable, PivotTable2 As PivotTable
+    Dim Summarized As VbMsgBoxResult
+
+    ' Check if "Data Sheet" exists
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("Data Sheet")
+    On Error GoTo 0
+    If ws Is Nothing Then
+        MsgBox "Data Sheet not found!", vbExclamation, "Error"
+        Exit Sub
+    End If
+
+    ' Create or clear the "HL_Pivot" worksheet
+    On Error Resume Next
+    Set PivotWs = ThisWorkbook.Sheets("HL_Pivot")
+    On Error GoTo 0
+    If PivotWs Is Nothing Then
+        Set PivotWs = ThisWorkbook.Sheets.Add
+        PivotWs.Name = "HL_Pivot"
+    Else
+        PivotWs.Cells.Clear
+    End If
+
+    ' Define the range for the pivot table data
+    LastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    LastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    Set PivotRange = ws.Range(ws.Cells(1, 1), ws.Cells(LastRow, LastCol))
+
+    ' Create the first pivot table: Vul title vs Hostname
+    Set PivotTable1 = PivotWs.PivotTables.Add(PivotCache:=ThisWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:=PivotRange), TableDestination:=PivotWs.Cells(1, 1), TableName:="PivotTableVulTitle")
+    With PivotTable1
+        .PivotFields("Vul title").Orientation = xlRowField
+        .PivotFields("Hostname").Orientation = xlDataField
+        .PivotFields("Hostname").Function = xlCount
+        .PivotFields("Vul title").AutoSort Order:=xlDescending, Field:="Count of Hostname"
+    End With
+
+    ' Create the second pivot table: Category vs IP Address with filters
+    Set PivotTable2 = PivotWs.PivotTables.Add(PivotCache:=ThisWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:=PivotRange), TableDestination:=PivotWs.Cells(1, 8), TableName:="PivotTableCategory")
+    With PivotTable2
+        .PivotFields("Category").Orientation = xlRowField
+        .PivotFields("IP Address").Orientation = xlDataField
+        .PivotFields("IP Address").Function = xlCount
+        .PivotFields("Criticality").Orientation = xlPageField
+        .PivotFields("cm2").Orientation = xlPageField
+        .PivotFields("cm3").Orientation = xlPageField
+        .PivotFields("Category").AutoSort Order:=xlDescending, Field:="Count of IP Address"
+    End With
+
+    ' Ask the user if they want the data to be summarized
+    Summarized = MsgBox("Do you want the data to be summarized?", vbYesNo + vbQuestion, "Summarize Data?")
+    If Summarized = vbYes Then
+        ' Add summarization logic here if needed
+    End If
+
+End Sub
