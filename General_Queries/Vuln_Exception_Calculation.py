@@ -16,7 +16,7 @@ extracted_data['Exception Expiration'] = pd.to_datetime(extracted_data['Exceptio
 # Define the current date
 current_date = pd.Timestamp('today')
 
-# Initialize new columns for date range checks
+# Initialize new columns for date range checks with False values
 date_range_columns = [
     'due date 0-30 days', 'due date 30-60 days', 'due date 60-90 days', 'due date >90 days',
     'exception expiration 0-30 days', 'exception expiration 30-60 days', 'exception expiration 60-90 days', 'exception expiration >90 days'
@@ -30,9 +30,9 @@ def check_date_ranges(date_value, current_date):
     if pd.notnull(date_value):
         delta_days = (date_value - current_date).days
         return {
-            '0-30': delta_days <= 30,
-            '30-60': 30 < delta_days <= 60,
-            '60-90': 60 < delta_days <= 90,
+            '0-30': 0 <= delta_days <= 30,
+            '30-60': 31 <= delta_days <= 60,
+            '60-90': 61 <= delta_days <= 90,
             '>90': delta_days > 90
         }
     return {'0-30': False, '30-60': False, '60-90': False, '>90': False}
