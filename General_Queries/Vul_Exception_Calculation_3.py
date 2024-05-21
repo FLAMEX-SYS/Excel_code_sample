@@ -1,38 +1,33 @@
 import pandas as pd
 from datetime import datetime
 
-# Load the first sheet with CM2, CM3, and asset ID
-file_path_1 = 'path_to_your_first_sheet.xlsx'  # Change this to the path of your first sheet
-cm_data = pd.read_excel(file_path_1)
+# Load the vulnerability data
+file_path = 'path_to_your_vulnerability_data.xlsx'  # Change this to the path of your vulnerability data file
+vul_data = pd.read_excel(file_path)
 
-# Load the second sheet with asset ID, vulnerability count, CVSS score, and other fields
-file_path_2 = 'path_to_your_second_sheet.xlsx'  # Change this to the path of your second sheet
-vul_data = pd.read_excel(file_path_2)
-
-# Ensure the columns are named appropriately
-# Assuming the columns in the first sheet are named 'asset_id', 'CM2', and 'CM3'
-# Assuming the columns in the second sheet are named 'asset_id', 'vul_count', 'CVSS', 'Due Date', 'Exception Expiration', 'Status'
-cm_data.columns = ['asset_id', 'CM2', 'CM3']  # Adjust if necessary
-vul_data.columns = ['asset_id', 'vul_count', 'CVSS', 'Due Date', 'Exception Expiration', 'Status']  # Adjust if necessary
-
-# Filter out rows where CM2 or CM3 are empty
-cm_data_filtered = cm_data.dropna(subset=['CM2', 'CM3'])
+# Extract the relevant columns
+extracted_columns = ['hostname', 'Due Date', 'Status', 'CVSS', 'Exception Expiration']
+extracted_data = vul_data[extracted_columns]
 
 # Ensure that date columns are parsed correctly and are timezone-naive
-vul_data['Due Date'] = pd.to_datetime(vul_data['Due Date'], errors='coerce').dt.tz_localize(None)
-vul_data['Exception Expiration'] = pd.to_datetime(vul_data['Exception Expiration'], errors='coerce').dt.tz_localize(None)
+extracted_data['Due Date'] = pd.to_datetime(extracted_data['Due Date'], errors='coerce').dt.tz_localize(None)
+extracted_data['Exception Expiration'] = pd.to_datetime(extracted_data['Exception Expiration'], errors='coerce').dt.tz_localize(None)
+
+# Print the first value under the "Due Date" column
+first_due_date = extracted_data['Due Date'].iloc[0]
+print("First Due Date:", first_due_date)
 
 # Define the current date and ensure it is timezone-naive
 current_date = pd.Timestamp('today').normalize()
 
 # Initialize new columns for date range checks with False values
 date_range_columns = [
-    'due date 0-30 days', 'due date 30-60 days', 'due date 60-90 days', 'due date >90 days',
-    'exception expiration 0-30 days', 'exception expiration 30-60 days', 'exception expiration 60-90 days', 'exception expiration >90 days'
+    'due date 0-30 days high CVSS', 'due date 30-60 days high CVSS', 'due date 60-90 days high CVSS', 'due date >90 days high CVSS',
+    'exception expiration 0-30 days high CVSS', 'exception expiration 30-60 days high CVSS', 'exception expiration 60-90 days high CVSS', 'exception expiration >90 days high CVSS'
 ]
 
 for column in date_range_columns:
-    vul_data[column] = False
+    extracted_data[column] = False
 
 # Function to check date ranges and get the difference in days
 def check_date_ranges(date_value, current_date):
@@ -46,53 +41,66 @@ def check_date_ranges(date_value, current_date):
         }
     return {'0-30': False, '30-60': False, '60-90': False, '>90': False}
 
-# Calculate date ranges for Due Date only for high CVSS scores
-for index, row in vul_data.iterrows():
+# Calculate date ranges for Due Date for high CVSS scores
+for index, row in extracted_data.iterrows():
     if row['CVSS'] > 7:
         due_date_ranges = check_date_ranges(row['Due Date'], current_date)
-        vul_data.at[index, 'due date 0-30 days'] = due_date_ranges['0-30']
-        vul_data.at[index, 'due date 30-60 days'] = due_date_ranges['30-60']
-        vul_data.at[index, 'due date 60-90 days'] = due_date_ranges['60-90']
-        vul_data.at[index, 'due date >90 days'] = due_date_ranges['>90']
+        extracted_data.at[index, 'due date 0-30 days high CVSS'] = due_date_ranges['0-30']
+        extracted_data.at[index, 'due date 30-60 days high CVSS'] = due_date_ranges['30-60']
+        extracted_data.at[index, 'due date 60-90 days high CVSS'] = due_date_ranges['60-90']
+        extracted_data.at[index, 'due date >90 days high CVSS'] = due_date_ranges['>90']
 
+# Calculate date ranges for Exception Expiration for high CVSS scores, setting blank values to False by default
+for index, row in extracted_data.iterrows():
+    if pd.notnull(row['Exception Expiration']) and row['CVSS'] > 7:
         exception_expiration_ranges = check_date_ranges(row['Exception Expiration'], current_date)
-        vul_data.at[index, 'exception expiration 0-30 days'] = exception_expiration_ranges['0-30']
-        vul_data.at[index, 'exception expiration 30-60 days'] = exception_expiration_ranges['30-60']
-        vul_data.at[index, 'exception expiration 60-90 days'] = exception_expiration_ranges['60-90']
-        vul_data.at[index, 'exception expiration >90 days'] = exception_expiration_ranges['>90']
+        extracted_data.at[index, 'exception expiration 0-30 days high CVSS'] = exception_expiration_ranges['0-30']
+        extracted_data.at[index, 'exception expiration 30-60 days high CVSS'] = exception_expiration_ranges['30-60']
+        extracted_data.at[index, 'exception expiration 60-90 days high CVSS'] = exception_expiration_ranges['60-90']
+        extracted_data.at[index, 'exception expiration >90 days high CVSS'] = exception_expiration_ranges['>90']
 
-# Convert boolean columns to integers to avoid float issues
-for column in date_range_columns:
-    vul_data[column] = vul_data[column].astype(int)
+# Initialize new columns for additional counts
+extracted_data['has_exception'] = pd.notnull(extracted_data['Exception Expiration'])
+extracted_data['is_closed'] = extracted_data['Status'].str.lower() == 'closed'
+extracted_data['high_cvss'] = extracted_data['CVSS'] > 7
 
-# Add new columns for the different counts
-vul_data['vul_count_high_cvss'] = vul_data['CVSS'].apply(lambda x: 1 if x > 7 else 0)
-vul_data['vul_count_exceptions_only'] = vul_data['Exception Expiration'].apply(lambda x: 1 if pd.notnull(x) else 0)
-vul_data['vul_count_closed'] = vul_data['Status'].apply(lambda x: 1 if x.lower() == 'closed' else 0)
+# Group by hostname and count the number of True values in each column
+aggregated_data = extracted_data.groupby('hostname').agg({
+    'Due Date': 'count',
+    'due date 0-30 days high CVSS': 'sum',
+    'due date 30-60 days high CVSS': 'sum',
+    'due date 60-90 days high CVSS': 'sum',
+    'due date >90 days high CVSS': 'sum',
+    'exception expiration 0-30 days high CVSS': 'sum',
+    'exception expiration 30-60 days high CVSS': 'sum',
+    'exception expiration 60-90 days high CVSS': 'sum',
+    'exception expiration >90 days high CVSS': 'sum',
+    'has_exception': 'sum',
+    'is_closed': 'sum',
+    'high_cvss': 'sum'
+}).reset_index()
 
-# Merge the cm_data_filtered and vul_data DataFrames on the 'asset_id' column
-merged_data = pd.merge(cm_data_filtered, vul_data, on='asset_id', how='inner')
+# Rename the columns for clarity
+aggregated_data = aggregated_data.rename(columns={
+    'Due Date': 'vulnerability_count',
+    'due date 0-30 days high CVSS': 'due date 0-30 days high CVSS count',
+    'due date 30-60 days high CVSS': 'due date 30-60 days high CVSS count',
+    'due date 60-90 days high CVSS': 'due date 60-90 days high CVSS count',
+    'due date >90 days high CVSS': 'due date >90 days high CVSS count',
+    'exception expiration 0-30 days high CVSS': 'exception expiration 0-30 days high CVSS count',
+    'exception expiration 30-60 days high CVSS': 'exception expiration 30-60 days high CVSS count',
+    'exception expiration 60-90 days high CVSS': 'exception expiration 60-90 days high CVSS count',
+    'exception expiration >90 days high CVSS': 'exception expiration >90 days high CVSS count',
+    'has_exception': 'vulnerability_count_with_exceptions',
+    'is_closed': 'vulnerability_count_closed',
+    'high_cvss': 'vulnerability_count_high_cvss'
+})
 
-# Group by CM2 and CM3 to calculate the required counts
-consolidated_data = merged_data.groupby(['CM2', 'CM3']).agg(
-    Asset_Count=('asset_id', 'nunique'),  # Count of unique asset IDs
-    Vul_Count=('vul_count', 'sum'),  # Sum of vulnerability counts
-    Vul_Count_High_CVSS=('vul_count_high_cvss', 'sum'),
-    Vul_Count_Exceptions_Only=('vul_count_exceptions_only', 'sum'),
-    Vul_Count_Exceptions_Removed=('vul_count_exceptions_only', lambda x: len(merged_data) - x.sum()),  # Total minus exceptions
-    Vul_Count_Closed=('vul_count_closed', 'sum'),
-    high_cvss_due_date_0_30=('due date 0-30 days', 'sum'),
-    high_cvss_due_date_30_60=('due date 30-60 days', 'sum'),
-    high_cvss_due_date_60_90=('due date 60-90 days', 'sum'),
-    high_cvss_due_date_gt_90=('due date >90 days', 'sum'),
-    high_cvss_exception_exp_0_30=('exception expiration 0-30 days', 'sum'),
-    high_cvss_exception_exp_30_60=('exception expiration 30-60 days', 'sum'),
-    high_cvss_exception_exp_60_90=('exception expiration 60-90 days', 'sum'),
-    high_cvss_exception_exp_gt_90=('exception expiration >90 days', 'sum')
-).reset_index()
+# Add a new column for vulnerabilities count without exceptions
+aggregated_data['vulnerability_count_exceptions_removed'] = aggregated_data['vulnerability_count'] - aggregated_data['vulnerability_count_with_exceptions']
 
-# Save the final DataFrame to a new Excel file
-output_path_final = 'consolidated_vulnerability_data.xlsx'  # Change this to your desired output path
-consolidated_data.to_excel(output_path_final, index=False)
+# Save the aggregated DataFrame to a new Excel file
+output_path_aggregated = 'aggregated_vulnerability_data.xlsx'  # Change this to your desired output path
+aggregated_data.to_excel(output_path_aggregated, index=False)
 
-print("Consolidated data saved to", output_path_final)
+print("Aggregated data saved to", output_path_aggregated)
