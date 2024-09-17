@@ -1,2 +1,3 @@
-# Excel_code_sample
- 
+# code_sample
+
+ Creating sample codes for Excel and Python
